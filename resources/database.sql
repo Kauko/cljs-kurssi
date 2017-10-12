@@ -18,6 +18,11 @@ CREATE TABLE product_category (
   category_id INTEGER NOT NULL REFERENCES category (id)
 );
 
+CREATE TABLE product_rating(
+  product_id INTEGER NOT NULL REFERENCES product(id),
+  rating NUMERIC (2,1) NOT NULL check (rating BETWEEN 1 AND 5)
+);
+
 -- insert some test data
 
 INSERT INTO category (name, description)
@@ -33,3 +38,10 @@ VALUES ('Illudium Q-36 Explosive Space Modulator', 'Pesky planets obstructing yo
 
 INSERT INTO product_category (product_id, category_id)
 VALUES (1, 3), (2, 1), (3, 1), (4, 2);
+
+INSERT INTO product_rating(product_id, rating)
+VALUES
+  (1, 3), (1, 2), (1, 4), (1, 5), (1, 2),
+  (2, 1), (2, 1), (2, 2), (2, 1),
+  (3, 1), (3, 5), (3, 5), (3, 5), (3, 5),
+  (4, 2), (4, 4);
