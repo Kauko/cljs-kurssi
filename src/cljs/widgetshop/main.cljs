@@ -8,6 +8,49 @@
             [widgetshop.app.state :as state]
             [widgetshop.app.products :as products]))
 
+(defn- star [state]
+  [:span {:style {:width "20px"
+                  :height "20px"
+                  :margin "2px"
+                  :border-color "black"
+                  :border-style "solid"
+                  :display "inline-block"
+                  }}
+   [:span {:style (cond->
+                    {:width "10px"
+                     :height "20px"
+                     :display "inline-block"}
+
+                    (#{:full :half} state)
+                    (assoc :background-color "yellow"))}]
+   [:span {:style (cond->
+                    {:width "10px"
+                     :height "20px"
+                     :display "inline-block"}
+
+                    (= :full state)
+                    (assoc :background-color "yellow"))}]])
+
+(defn- star-state [avg num]
+  (let [full-stars (int avg)
+        final-star (- avg (int avg))]
+    (take num
+          (concat
+            (take full-stars (repeat :full))
+            (when (>= final-star 0.5) [:half])
+            (repeat nil)))))
+
+(defn star-rating [rating ratings_count]
+  (let [states (star-state rating 5)]
+    [:div
+     (doall
+       (map-indexed
+        (fn [i state]
+          ^{:key (str "star_" i)}
+          [star state])
+        states))
+    (str ratings_count " ratings")]))
+
 (defn product-view [{:keys [name description] :as product}]
   (when product
     [ui/card
@@ -31,14 +74,16 @@
        [ui/table-header-column "Name"]
        [ui/table-header-column "Description"]
        [ui/table-header-column "Price (€)"]
+       [ui/table-header-column "Rating"]
        [ui/table-header-column "Add to cart"]]]
      [ui/table-body {:display-row-checkbox false}
-      (for [{:keys [id name description price] :as product} products]
+      (for [{:keys [id name description price rating ratings_count] :as product} products]
         ^{:key id}
         [ui/table-row
          [ui/table-row-column name]
          [ui/table-row-column description]
          [ui/table-row-column price]
+         [ui/table-row-column [star-rating rating ratings_count]]
          [ui/table-row-column
           [ui/flat-button {:primary true :on-click #(state/update-state! add-to-cart product)}
            "Add to cart"]]])]]))
