@@ -6,11 +6,16 @@
 
 (defn fetch-products-for-category [db category]
   (into []
-        (map #(update % :price double))
-        (jdbc/query db [(str "SELECT p.id,p.name,p.description,p.price"
+        (comp
+          (map #(update % :price double))
+          (map #(update % :rating double)))
+        (jdbc/query db [(str "SELECT p.id,p.name,p.description,p.price,"
+                             "  avg(pr.rating) AS rating, count(pr.rating) AS ratings_count"
                              "  FROM product p"
                              "  JOIN product_category pc ON pc.product_id = p.id "
-                             " WHERE pc.category_id = ?")
+                             "  LEFT JOIN product_rating pr ON pr.product_id = p.id"
+                             " WHERE pc.category_id = ?"
+                             " GROUP BY p.id, p.name, p.description, p.price")
                         category])))
 
 (defn fetch-product-categories [db]
