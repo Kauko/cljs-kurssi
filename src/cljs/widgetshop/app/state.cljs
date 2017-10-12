@@ -5,6 +5,7 @@
 (defonce app (r/atom {:cart []
                       :categories :loading ;; list of product categories
                       :category nil ;; the selected category
+                      :selected-product nil
 
                       ;; Loaded product listings keyd by selected category
                       :products-by-category {}}))

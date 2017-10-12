@@ -8,22 +8,21 @@
             [widgetshop.app.state :as state]
             [widgetshop.app.products :as products]))
 
-
-
-;; Task 1: refactor this, the listing of products in a category should
-;; be its own component (perhaps in another namespace).
-;;
-;; Task 2: Add actions to add item to cart. See that cart badge is automatically updated.
-;;
+(defn product-view [product]
+  (when product
+    [:div (pr-str product)]))
 
 (defn- add-to-cart [app product]
   (update app :cart conj product))
+
+(defn- select-product [app product]
+  (assoc app :selected-product product))
 
 (defn products-list [products]
   (if (= :loading products)
     [ui/refresh-indicator {:status "loading" :size 40 :left 10 :top 10}]
 
-    [ui/table
+    [ui/table {:on-row-selection #(state/update-state! select-product (get products (first (js->clj %))))}
      [ui/table-header {:display-select-all false :adjust-for-checkbox false}
       [ui/table-row
        [ui/table-header-column "Name"]
@@ -70,7 +69,9 @@
 
      [ui/raised-button {:label        "Click me"
                         :icon         (ic/social-group)
-                        :on-click     #(println "clicked")}]]]])
+                        :on-click     #(println "clicked")}]]
+
+    [product-view (:selected-product app)]]])
 
 
 (defn main-component []
