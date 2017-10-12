@@ -20,7 +20,8 @@ CREATE TABLE product_category (
 
 CREATE TABLE product_rating(
   product_id INTEGER NOT NULL REFERENCES product(id),
-  rating NUMERIC (2,1) NOT NULL check (rating BETWEEN 1 AND 5)
+  rating NUMERIC (2,1) NOT NULL check (rating BETWEEN 1 AND 5),
+  review TEXT
 );
 
 -- insert some test data
@@ -39,9 +40,9 @@ VALUES ('Illudium Q-36 Explosive Space Modulator', 'Pesky planets obstructing yo
 INSERT INTO product_category (product_id, category_id)
 VALUES (1, 3), (2, 1), (3, 1), (4, 2);
 
-INSERT INTO product_rating(product_id, rating)
+INSERT INTO product_rating(product_id, rating, review)
 VALUES
-  (1, 3), (1, 2), (1, 4), (1, 5), (1, 2),
-  (2, 1), (2, 1), (2, 2), (2, 1),
-  (3, 1), (3, 5), (3, 5), (3, 5), (3, 5),
-  (4, 2), (4, 4);
+  (1, 3, ''), (1, 2, 'Sucks'), (1, 4, ''), (1, 5, ''), (1, 2, 'Bad!'),
+  (2, 1, ''), (2, 1, 'Dont buy'), (2, 2, ''), (2, 1, 'sad!'),
+  (3, 1, 'It broke :('), (3, 5, 'Damn trolls, the product is awesome'), (3, 5, ''), (3, 5, 'I agree, great product'), (3, 5, ''),
+  (4, 2, ''), (4, 4, 'Rare find');
