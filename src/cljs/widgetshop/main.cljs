@@ -8,9 +8,12 @@
             [widgetshop.app.state :as state]
             [widgetshop.app.products :as products]))
 
-(defn product-view [product]
+(defn product-view [{:keys [name description] :as product}]
   (when product
-    [:div (pr-str product)]))
+    [ui/card
+     {:initially-expanded true}
+     [ui/card-header {:title name}]
+     [ui/card-text description]]))
 
 (defn- add-to-cart [app product]
   (update app :cart conj product))
