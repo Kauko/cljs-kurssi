@@ -45,7 +45,7 @@
   ([rating] [star-rating rating nil])
   ([rating ratings_count]
    (let [states (star-state rating 5)]
-     [:div
+     [:div {:style {:display "inline-block"}}
       (doall
         (map-indexed
           (fn [i state]
@@ -64,14 +64,15 @@
      (if (= :loading ratings)
        [ui/circular-progress]
 
-       [:ul
+       [:ul {:style {:list-style "none"}}
         (doall
           (map-indexed
             (fn [i {:keys [rating review]}]
               ^{:key (str i "_review")}
               [:li
-               [star-rating rating]
-               review])
+               [:div
+                [star-rating rating]
+                review]])
             ratings))])]))
 
 (defn- add-to-cart [app product]
@@ -89,8 +90,13 @@
   (assoc-in app [:selected-product :ratings] :loading))
 
 (defn select-product! [products row-index]
-  (state/update-state! select-product (get products (first (js->clj row-index))))
-  (state/update-state! load-product-ratings! (get products (first (js->clj row-index)))))
+  (if-let [row-index (first (js->clj row-index))]
+    (do
+      (state/update-state! select-product (get products row-index))
+      (state/update-state! load-product-ratings! (get products row-index)))
+
+    (do
+      (state/update-state! select-product nil))))
 
 (defn products-list [products]
   (if (= :loading products)
