@@ -19,7 +19,6 @@
                         category])))
 
 (defn fetch-ratings-for-product [db product-id]
-  (println (str "Fetch ratings for " product-id))
   (into []
         (comp
           (map #(update % :rating double)))
