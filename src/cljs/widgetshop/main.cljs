@@ -55,25 +55,73 @@
       (when ratings_count
         (str ratings_count " ratings"))])))
 
-(defn product-view [{:keys [name description ratings] :as product}]
+(defn set-rating [app value]
+  (assoc-in app [:selected-product :my-review :rating] value))
+
+(defn set-comment [app comment]
+  (assoc-in app [:selected-product :my-review :comment] comment))
+
+(def default-rating 3)
+
+(defn review-saved [app product-id saved-review reviews]
+  (if (= (get-in app [:selected-product :id]) product-id)
+    (-> app
+        (assoc-in [:selected-product :ratings] reviews)
+        (assoc-in [:selected-product :my-review] (assoc saved-review :saved? true)))
+
+    app))
+
+(defn review-save-failed [app]
+  (assoc-in app [:selected-product :my-review] {}))
+
+(defn save-review! [app {{:keys [comment rating] :as review} :my-review id :id :as product}]
+  (let [product (update-in product [:my-review :rating] #(or % default-rating))]
+    (server/post! (str "/ratings/")
+                  {:on-success #(state/update-state! review-saved id review %)
+                   :params product
+                   :on-failure #(state/update-state! review-save-failed)})
+    (assoc-in app [:selected-product :my-review] :saving)))
+
+(defn product-view [{:keys [name description ratings my-review] :as product}]
   (when product
     [ui/card
      {:initially-expanded true}
      [ui/card-header {:title name}]
      [ui/card-text description]
-     (if (= :loading ratings)
-       [ui/circular-progress]
+     [:div
+      (if (= :loading ratings)
+        [ui/circular-progress]
 
-       [:ul {:style {:list-style "none"}}
-        (doall
-          (map-indexed
-            (fn [i {:keys [rating review]}]
-              ^{:key (str i "_review")}
-              [:li
-               [:div
-                [star-rating rating]
-                review]])
-            ratings))])]))
+        [:ul {:style {:list-style "none"}}
+         (doall
+           (map-indexed
+             (fn [i {:keys [rating review]}]
+               ^{:key (str i "_review")}
+               [:li
+                [:div
+                 [star-rating rating]
+                 review]])
+             ratings))])
+
+      (if-not (= :saving my-review)
+        [:div
+         [star-rating (:rating my-review)]
+         [ui/slider {:step 0.5
+                     :min 0
+                     :disabled (:saved? my-review)
+                     :default-value default-rating
+                     :max 5
+                     :on-change #(state/update-state! set-rating %2)}]
+         [ui/text-field {:hint-text "Write your comment here (optional)"
+                         :name "review-comment"
+                         :disabled (:saved? my-review)
+                         :on-change #(state/update-state! set-comment %2)}]
+         [ui/flat-button {:primary true
+                          :disabled (:saved? my-review)
+                          :on-click #(state/update-state! save-review! product)}
+          "Save review"]]
+
+        [ui/circular-progress])]]))
 
 (defn- add-to-cart [app product]
   (update app :cart conj product))
@@ -92,10 +140,12 @@
 (defn select-product! [products row-index]
   (if-let [row-index (first (js->clj row-index))]
     (do
+      (println (str "Selected row " row-index))
       (state/update-state! select-product (get products row-index))
       (state/update-state! load-product-ratings! (get products row-index)))
 
     (do
+      (println "Row selection removed!")
       (state/update-state! select-product nil))))
 
 (defn products-list [products]
@@ -110,7 +160,8 @@
        [ui/table-header-column "Price (€)"]
        [ui/table-header-column "Rating"]
        [ui/table-header-column "Add to cart"]]]
-     [ui/table-body {:display-row-checkbox false}
+     [ui/table-body {:display-row-checkbox false
+                     :deselect-on-clickaway false}
       (for [{:keys [id name description price rating ratings_count] :as product} products]
         ^{:key id}
         [ui/table-row
