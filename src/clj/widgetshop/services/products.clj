@@ -2,7 +2,8 @@
   (:require [widgetshop.components.http :refer [publish! transit-response]]
             [com.stuartsierra.component :as component]
             [compojure.core :refer [routes GET POST]]
-            [clojure.java.jdbc :as jdbc]))
+            [clojure.java.jdbc :as jdbc]
+            [cognitect.transit :as transit]))
 
 (defn fetch-products-for-category [db category]
   (into []
@@ -27,6 +28,16 @@
                              " WHERE pr.product_id = ?")
                         product-id])))
 
+(defn save-rating-for-product! [db product-id comment rating]
+  (jdbc/with-db-transaction [db db]
+    (jdbc/insert!
+      db
+      "product_rating"
+      {:product_id product-id
+       :review comment
+       :rating rating})
+    (fetch-ratings-for-product db product-id)))
+
 (defn fetch-product-categories [db]
   (jdbc/query db ["SELECT c.id, c.name, c.description FROM category c"]))
 
@@ -44,7 +55,16 @@
                                 (fetch-products-for-category db (Long/parseLong category))))
                             (GET "/ratings/:product" [product]
                               (transit-response
-                                (fetch-ratings-for-product db (Long/parseLong product))))))))
+                                (fetch-ratings-for-product db (Long/parseLong product))))
+                            (POST "/ratings/" {body :body}
+                              (let [{id :id
+                                     {:keys [comment rating]} :my-review
+                                     :as params}
+                                    (-> body
+                                        (transit/reader :json)
+                                        (transit/read))]
+                                (transit-response
+                                  (save-rating-for-product! db id comment rating))))))))
   (stop [{stop ::routes :as this}]
     (stop)
     (dissoc this ::routes)))
